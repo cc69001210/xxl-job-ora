@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxl.job.admin.dao.XxlJobGroupDao">
+	
+	<resultMap id="XxlJobGroup" type="com.xxl.job.admin.core.model.XxlJobGroup" >
+		<result column="ID" property="id" jdbcType="INTEGER"/>
+	    <result column="APP_NAME" property="appname" jdbcType="VARCHAR"/>
+	    <result column="TITLE" property="title" jdbcType="VARCHAR"/>
+		<result column="ADDRESS_TYPE" property="addressType" jdbcType="INTEGER"/>
+		<result column="ADDRESS_LIST" property="addressList" jdbcType="VARCHAR"/>
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		T.ID,
+		T.APP_NAME,
+		T.TITLE,
+		T.ADDRESS_TYPE,
+		T.ADDRESS_LIST
+	</sql>
+
+	<select id="findAll" resultMap="XxlJobGroup">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_GROUP T
+		ORDER BY T.APP_NAME, T.TITLE, T.ID ASC
+	</select>
+
+	<select id="findByAddressType" parameterType="java.lang.Integer" resultMap="XxlJobGroup">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_GROUP T
+		WHERE T.ADDRESS_TYPE = #{addressType}
+		ORDER BY T.APP_NAME, T.TITLE, T.ID ASC
+	</select>
+
+	<insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobGroup"  keyProperty="id" >
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			SELECT SEQ_XXL_JOB_GROUP.NEXTVAL as id FROM DUAL
+		</selectKey>
+		INSERT INTO XXL_JOB_GROUP (ID, APP_NAME, TITLE, ADDRESS_TYPE, ADDRESS_LIST)
+		values (
+			#{id},
+			#{appname,jdbcType=VARCHAR},
+			#{title,jdbcType=VARCHAR},
+			#{addressType,jdbcType=NUMERIC},
+			#{addressList,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<update id="update" parameterType="com.xxl.job.admin.core.model.XxlJobGroup" >
+		UPDATE XXL_JOB_GROUP
+		SET APP_NAME = #{appname,jdbcType=VARCHAR},
+			TITLE = #{title,jdbcType=VARCHAR},
+			ADDRESS_TYPE = #{addressType,jdbcType=NUMERIC},
+			UPDATE_TIME = to_date(#{updateTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			ADDRESS_LIST = #{addressList,jdbcType=VARCHAR}
+		WHERE ID = #{id}
+	</update>
+
+	<delete id="remove" parameterType="java.lang.Integer" >
+		DELETE FROM XXL_JOB_GROUP
+		WHERE ID = #{id}
+	</delete>
+
+	<select id="load" parameterType="java.lang.Integer" resultMap="XxlJobGroup">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_GROUP t
+		WHERE T.ID = #{id}
+	</select>
+
+	<select id="pageList" parameterType="java.util.HashMap" resultMap="XxlJobGroup">
+		SELECT * FROM (
+			SELECT ROWNUM AS rowNo,T2.* FROM (
+				SELECT
+				<include refid="Base_Column_List"/>
+				FROM XXL_JOB_GROUP T
+				<trim prefix="WHERE" prefixOverrides="AND | OR">
+					<if test="appname != null and appname != ''">
+						AND T.APP_NAME LIKE CONCAT(CONCAT('%', #{appname}), '%')
+					</if>
+					<if test="title != null and title != ''">
+						AND T.TITLE LIKE CONCAT(CONCAT('%', #{title}), '%')
+					</if>
+				</trim>
+				ORDER BY T.APP_NAME, T.TITLE, T.ID ASC
+			) T2 WHERE ROWNUM &lt;= (#{offset} + #{pagesize})
+		) T3 WHERE rowNo > #{offset}
+	</select>
+
+	<select id="pageListCount" parameterType="java.util.HashMap" resultType="int">
+		SELECT count(1)
+		FROM XXL_JOB_GROUP T
+		<trim prefix="WHERE" prefixOverrides="AND | OR" >
+			<if test="appname != null and appname != ''">
+				AND T.APP_NAME LIKE CONCAT(CONCAT('%', #{appname}), '%')
+			</if>
+			<if test="title != null and title != ''">
+				AND T.TITLE like CONCAT(CONCAT('%', #{title}), '%')
+			</if>
+		</trim>
+	</select>
+
+</mapper>

@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxl.job.admin.dao.XxlJobLogDao">
+	
+	<resultMap id="XxlJobLog" type="com.xxl.job.admin.core.model.XxlJobLog" >
+		<result column="ID" property="id" />
+		<result column="JOB_GROUP" property="jobGroup" />
+		<result column="JOB_ID" property="jobId" />
+		<result column="EXECUTOR_ADDRESS" property="executorAddress" />
+		<result column="EXECUTOR_HANDLER" property="executorHandler" />
+	    <result column="EXECUTOR_PARAM" property="executorParam" />
+		<result column="EXECUTOR_SHARDING_PARAM" property="executorShardingParam" />
+		<result column="EXECUTOR_FAIL_RETRY_COUNT" property="executorFailRetryCount" />
+	    <result column="TRIGGER_TIME" property="triggerTime" />
+	    <result column="TRIGGER_TIME_STR" property="triggerTimeStr" />
+	    <result column="TRIGGER_CODE" property="triggerCode" />
+	    <result column="TRIGGER_MSG" property="triggerMsg" />
+	    <result column="HANDLE_TIME" property="handleTime" />
+	    <result column="HANDLE_TIME_STR" property="handleTimeStr" />
+	    <result column="HANDLE_CODE" property="handleCode" />
+	    <result column="HANDLE_MSG" property="handleMsg" />
+		<result column="ALARM_STATUS" property="alarmStatus" />
+		<result column="JOB_DESC" property="jobDesc" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		T.ID,
+		T.JOB_GROUP,
+		T.JOB_ID,
+		T.EXECUTOR_ADDRESS,
+		T.EXECUTOR_HANDLER,
+		T.EXECUTOR_PARAM,
+		T.EXECUTOR_SHARDING_PARAM,
+		T.EXECUTOR_FAIL_RETRY_COUNT,
+		T.TRIGGER_TIME,
+		T.TRIGGER_CODE,
+		T.TRIGGER_MSG,
+		T.HANDLE_TIME,
+		T.HANDLE_CODE,
+		T.HANDLE_MSG,
+		T.ALARM_STATUS,
+		TO_CHAR(TRIGGER_TIME,'yyyy-mm-dd hh24:mi:ss') TRIGGER_TIME_STR,
+		TO_CHAR(HANDLE_TIME,'yyyy-mm-dd hh24:mi:ss') HANDLE_TIME_STR
+	</sql>
+
+	<sql id="Page_Column_List">
+		T.ID,
+		T.JOB_GROUP,
+		T.JOB_ID,
+		T.EXECUTOR_ADDRESS,
+		T.EXECUTOR_HANDLER,
+		T.EXECUTOR_PARAM,
+		T.EXECUTOR_SHARDING_PARAM,
+		T.EXECUTOR_FAIL_RETRY_COUNT,
+		T.TRIGGER_TIME,
+		T.TRIGGER_CODE,
+		T.TRIGGER_MSG,
+		T.HANDLE_TIME,
+		T.HANDLE_CODE,
+		T.HANDLE_MSG,
+		T.ALARM_STATUS,
+		XXL_JOB_INFO.JOB_DESC,
+		TO_CHAR(TRIGGER_TIME,'yyyy-mm-dd hh24:mi:ss') TRIGGER_TIME_STR,
+		TO_CHAR(HANDLE_TIME,'yyyy-mm-dd hh24:mi:ss') HANDLE_TIME_STR
+	</sql>
+	
+	<select id="pageList" resultMap="XxlJobLog">
+		SELECT * FROM (
+			SELECT ROWNUM AS rowNo, T2.* FROM (
+			SELECT <include refid="Page_Column_List" />
+			FROM XXL_JOB_LOG T INNER JOIN XXL_JOB_INFO ON XXL_JOB_INFO.ID = T.JOB_ID
+			<trim prefix="WHERE" prefixOverrides="AND | OR" >
+				<if test="jobId==0 and jobGroup gt 0">
+					AND T.JOB_GROUP = #{jobGroup}
+				</if>
+				<if test="jobId gt 0">
+					AND T.JOB_ID = #{jobId}
+				</if>
+				<if test="triggerTimeStart != null">
+					AND T.TRIGGER_TIME <![CDATA[ >= ]]> #{triggerTimeStart}
+				</if>
+				<if test="triggerTimeEnd != null">
+					AND T.TRIGGER_TIME <![CDATA[ <= ]]> #{triggerTimeEnd}
+				</if>
+				<if test="logStatus == 1" >
+					AND T.HANDLE_CODE = 200
+				</if>
+				<if test="logStatus == 2" >
+					AND (
+					T.TRIGGER_CODE NOT IN (0, 200) OR
+					T.HANDLE_CODE NOT IN (0, 200)
+					)
+				</if>
+				<if test="logStatus == 3" >
+					AND T.TRIGGER_CODE = 200
+					AND T.HANDLE_CODE = 0
+				</if>
+			</trim>
+			ORDER BY T.TRIGGER_TIME DESC
+			) T2 WHERE ROWNUM &lt;= (#{offset} + #{pagesize})
+		) T3 WHERE T3.rowNo > #{offset}
+	</select>
+	
+	<select id="pageListCount" resultType="int">
+		SELECT count(1)
+		FROM XXL_JOB_LOG T
+		<trim prefix="WHERE" prefixOverrides="AND | OR" >
+			<if test="jobId==0 and jobGroup gt 0">
+				AND T.JOB_GROUP = #{jobGroup}
+			</if>
+			<if test="jobId gt 0">
+				AND T.JOB_ID = #{jobId}
+			</if>
+			<if test="triggerTimeStart != null">
+				AND T.TRIGGER_TIME <![CDATA[ >= ]]> #{triggerTimeStart}
+			</if>
+			<if test="triggerTimeEnd != null">
+				AND T.TRIGGER_TIME <![CDATA[ <= ]]> #{triggerTimeEnd}
+			</if>
+			<if test="logStatus == 1" >
+				AND T.HANDLE_CODE = 200
+			</if>
+			<if test="logStatus == 2" >
+				AND (
+					T.TRIGGER_CODE NOT IN (0, 200) OR
+					T.HANDLE_CODE NOT IN (0, 200)
+				)
+			</if>
+			<if test="logStatus == 3" >
+				AND T.TRIGGER_CODE = 200
+				AND T.HANDLE_CODE = 0
+			</if>
+		</trim>
+	</select>
+	
+	<select id="load" parameterType="java.lang.Long" resultMap="XxlJobLog">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_LOG T
+		WHERE T.ID = #{id}
+	</select>
+
+	
+	<insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobLog"  keyProperty="id" >
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			SELECT SEQ_XXL_JOB_LOG.NEXTVAL as id FROM DUAL
+		</selectKey>
+		INSERT INTO XXL_JOB_LOG (
+			ID,
+			JOB_GROUP,
+			JOB_ID,
+			TRIGGER_TIME,
+			TRIGGER_CODE,
+			HANDLE_CODE
+		) VALUES (
+			#{id,jdbcType=NUMERIC},
+			#{jobGroup,jdbcType=NUMERIC},
+			#{jobId,jdbcType=NUMERIC},
+			to_date(#{triggerTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			#{triggerCode,jdbcType=NUMERIC},
+			#{handleCode,jdbcType=NUMERIC}
+		)
+	</insert>
+
+	<update id="updateTriggerInfo" >
+		UPDATE xxl_job_log
+		SET
+			TRIGGER_TIME= to_date(#{triggerTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			TRIGGER_CODE= #{triggerCode,jdbcType=NUMERIC},
+			TRIGGER_MSG= #{triggerMsg,jdbcType=VARCHAR},
+			EXECUTOR_ADDRESS= #{executorAddress,jdbcType=VARCHAR},
+			EXECUTOR_HANDLER=#{executorHandler,jdbcType=VARCHAR},
+			EXECUTOR_PARAM= #{executorParam,jdbcType=VARCHAR},
+			EXECUTOR_SHARDING_PARAM= #{executorShardingParam,jdbcType=VARCHAR},
+			EXECUTOR_FAIL_RETRY_COUNT= #{executorFailRetryCount,jdbcType=NUMERIC}
+		WHERE ID= #{id}
+	</update>
+
+	<update id="updateHandleInfo">
+		UPDATE XXL_JOB_LOG
+		SET 
+			HANDLE_TIME= TO_DATE(#{handleTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			HANDLE_CODE= #{handleCode,jdbcType=NUMERIC},
+			HANDLE_MSG= #{handleMsg,jdbcType=VARCHAR}
+		WHERE ID= #{id}
+	</update>
+	
+	<delete id="delete" >
+		delete from XXL_JOB_LOG
+		WHERE JOB_ID = #{jobId}
+	</delete>
+
+    <!--<select id="triggerCountByDay" resultType="java.util.Map" >
+		SELECT
+			DATE_FORMAT(trigger_time,'%Y-%m-%d') triggerDay,
+			COUNT(handle_code) triggerDayCount,
+			SUM(CASE WHEN (trigger_code in (0, 200) and handle_code = 0) then 1 else 0 end) as triggerDayCountRunning,
+			SUM(CASE WHEN handle_code = 200 then 1 else 0 end) as triggerDayCountSuc
+		FROM xxl_job_log
+		WHERE trigger_time BETWEEN #{from} and #{to}
+		GROUP BY triggerDay
+		ORDER BY triggerDay
+    </select>-->
+
+    <select id="findLogReport" resultType="com.xxl.job.admin.core.model.dto.XxlJobLogReportDto" >
+		SELECT
+			COUNT(HANDLE_CODE) triggerDayCount,
+			SUM(CASE WHEN (TRIGGER_CODE in (0, 200) and HANDLE_CODE = 0) then 1 else 0 end) as triggerDayCountRunning,
+			SUM(CASE WHEN HANDLE_CODE = 200 then 1 else 0 end) as triggerDayCountSuc
+		FROM XXL_JOB_LOG
+		WHERE TRIGGER_TIME BETWEEN #{from} and #{to}
+    </select>
+
+	<select id="findClearLogIds" resultType="long" >
+		SELECT * FROM (
+			SELECT ID FROM XXL_JOB_LOG
+			<trim prefix="WHERE" prefixOverrides="AND | OR" >
+				<if test="jobGroup gt 0">
+					AND JOB_GROUP = #{jobGroup}
+				</if>
+				<if test="jobId gt 0">
+					AND JOB_ID = #{jobId}
+				</if>
+				<if test="clearBeforeTime != null">
+					AND TRIGGER_TIME <![CDATA[ <= ]]> #{clearBeforeTime}
+				</if>
+				<if test="clearBeforeNum gt 0">
+					AND ID NOT IN (
+						SELECT ID FROM(
+							SELECT ID FROM XXL_JOB_LOG T
+							<trim prefix="WHERE" prefixOverrides="AND | OR" >
+								<if test="jobGroup gt 0">
+									AND t.job_group = #{jobGroup}
+								</if>
+								<if test="jobId gt 0">
+									AND t.job_id = #{jobId}
+								</if>
+							</trim>
+							ORDER BY t.trigger_time desc
+						) T1 WHERE ROWNUM &lt;=  #{clearBeforeNum}
+					)
+				</if>
+			</trim>
+			ORDER BY ID ASC
+		) T3 WHERE ROWNUM &lt;= #{pagesize}
+	</select>
+
+	<delete id="clearLog" >
+		delete from XXL_JOB_LOG
+		WHERE ID IN
+		<foreach collection="logIds" item="item" open="(" close=")" separator="," >
+			#{item}
+		</foreach>
+	</delete>
+
+	<select id="findFailJobLogIds" resultType="long" >
+		SELECT * FROM (
+			SELECT ID FROM XXL_JOB_LOG
+			WHERE NOT (
+				(TRIGGER_CODE IN (0, 200) AND HANDLE_CODE = 0)
+				OR
+				(HANDLE_CODE = 200)
+			)
+			AND ALARM_STATUS = 0
+			ORDER BY ID ASC
+		) T1 WHERE ROWNUM &lt;= #{pagesize}
+	</select>
+
+	<update id="updateAlarmStatus" >
+		UPDATE XXL_JOB_LOG
+		SET
+			ALARM_STATUS = #{newalarmstatus,jdbcType=NUMERIC}
+		WHERE ID= #{logId} AND ALARM_STATUS = #{oldAlarmStatus}
+	</update>
+
+	<select id="findLostJobIds" resultType="long" >
+		SELECT T.ID
+		FROM XXL_JOB_LOG T
+		WHERE T.TRIGGER_CODE = 200
+			AND T.HANDLE_CODE = 0
+			AND T.TRIGGER_TIME <![CDATA[ <= ]]> #{losedTime}
+			AND T.EXECUTOR_ADDRESS NOT IN (
+				SELECT T2.REGISTRY_VALUE
+				FROM XXL_JOB_REGISTRY T2
+			)
+	</select>
+
+</mapper>

@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxl.job.admin.dao.XxlJobInfoDao">
+
+	<resultMap id="XxlJobInfo" type="com.xxl.job.admin.core.model.XxlJobInfo" >
+		<result column="ID" property="id" />
+		<result column="JOB_GROUP" property="jobGroup" />
+	    <result column="JOB_CRON" property="jobCron" />
+	    <result column="JOB_DESC" property="jobDesc" />
+	    <result column="ADD_TIME" property="addTime" />
+	    <result column="ADD_TIME_STR" property="addTimeStr" />
+	    <result column="UPDATE_TIME" property="updateTime" />
+	    <result column="UPDATE_TIME_STR" property="updateTimeStr" />
+	    <result column="AUTHOR" property="author" />
+	    <result column="ALARM_EMAIL" property="alarmEmail" />
+		<result column="EXECUTOR_ROUTE_STRATEGY" property="executorRouteStrategy" />
+		<result column="EXECUTOR_HANDLER" property="executorHandler" />
+	    <result column="EXECUTOR_PARAM" property="executorParam" />
+		<result column="EXECUTOR_BLOCK_STRATEGY" property="executorBlockStrategy" />
+		<result column="EXECUTOR_TIMEOUT" property="executorTimeout" />
+		<result column="EXECUTOR_FAIL_RETRY_COUNT" property="executorFailRetryCount" />
+	    <result column="GLUE_TYPE" property="glueType" />
+	    <result column="GLUE_SOURCE" property="glueSource" />
+	    <result column="GLUE_REMARK" property="glueRemark" />
+		<result column="GLUE_UPDATETIME" property="glueUpdatetime" />
+		<result column="GLUE_UPDATETIME_STR" property="glueUpdatetimeStr" />
+		<result column="CHILD_JOBID" property="childJobId" />
+		<result column="TRIGGER_STATUS" property="triggerStatus" />
+		<result column="TRIGGER_LAST_TIME" property="triggerLastTime" />
+		<result column="TRIGGER_NEXT_TIME" property="triggerNextTime" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		T.ID,
+		T.JOB_GROUP,
+		T.JOB_CRON,
+		T.JOB_DESC,
+		T.ADD_TIME,
+		T.UPDATE_TIME,
+		T.AUTHOR,
+		T.ALARM_EMAIL,
+		T.EXECUTOR_ROUTE_STRATEGY,
+		T.EXECUTOR_HANDLER,
+		T.EXECUTOR_PARAM,
+		T.EXECUTOR_BLOCK_STRATEGY,
+		T.EXECUTOR_TIMEOUT,
+		T.EXECUTOR_FAIL_RETRY_COUNT,
+		T.GLUE_TYPE,
+		T.GLUE_SOURCE,
+		T.GLUE_REMARK,
+		T.GLUE_UPDATETIME,
+		T.CHILD_JOBID,
+		T.TRIGGER_STATUS,
+		T.TRIGGER_LAST_TIME,
+		T.TRIGGER_NEXT_TIME,
+		TO_CHAR(ADD_TIME,'yyyy-mm-dd hh24:mi:ss') ADD_TIME_STR,
+		TO_CHAR(UPDATE_TIME,'yyyy-mm-dd hh24:mi:ss') UPDATE_TIME_STR,
+		TO_CHAR(GLUE_UPDATETIME,'yyyy-mm-dd hh24:mi:ss') GLUE_UPDATETIME_STR
+	</sql>
+
+	<select id="pageList" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT * FROM (
+			SELECT ROWNUM AS rowNo, T2.* FROM (
+			SELECT <include refid="Base_Column_List" />
+			FROM XXL_JOB_INFO T
+			<trim prefix="WHERE" prefixOverrides="AND | OR" >
+				<if test="jobGroup gt 0">
+					AND T.JOB_GROUP = #{jobGroup}
+				</if>
+				<if test="triggerStatus gte 0">
+					AND T.TRIGGER_STATUS = #{triggerStatus}
+				</if>
+				<if test="jobDesc != null and jobDesc != ''">
+					AND T.JOB_DESC LIKE CONCAT(CONCAT('%', #{jobDesc}), '%')
+				</if>
+				<if test="executorHandler != null and executorHandler != ''">
+					AND T.EXECUTOR_HANDLER LIKE CONCAT(CONCAT('%', #{executorHandler}), '%')
+				</if>
+				<if test="author != null and author != ''">
+					AND T.AUTHOR LIKE CONCAT(CONCAT('%', #{author}), '%')
+				</if>
+			</trim>
+			ORDER BY id DESC
+			) T2 WHERE ROWNUM &lt;= (#{offset} + #{pagesize})
+		) T3 WHERE rowNo > #{offset}
+	</select>
+
+	<select id="pageListCount" parameterType="java.util.HashMap" resultType="int">
+		SELECT count(1)
+		FROM XXL_JOB_INFO T
+		<trim prefix="WHERE" prefixOverrides="AND | OR" >
+			<if test="jobGroup gt 0">
+				AND T.JOB_GROUP = #{jobGroup}
+			</if>
+            <if test="triggerStatus gte 0">
+                AND T.TRIGGER_STATUS = #{triggerStatus}
+            </if>
+			<if test="jobDesc != null and jobDesc != ''">
+				AND T.JOB_DESC LIKE CONCAT(CONCAT('%', #{jobDesc}), '%')
+			</if>
+			<if test="executorHandler != null and executorHandler != ''">
+				AND T.EXECUTOR_HANDLER LIKE CONCAT(CONCAT('%', #{executorHandler}), '%')
+			</if>
+			<if test="author != null and author != ''">
+				AND T.AUTHOR LIKE CONCAT(CONCAT('%', #{author}), '%')
+			</if>
+		</trim>
+	</select>
+
+	<insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobInfo"  keyProperty="id">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			SELECT SEQ_XXL_JOB_INFO.NEXTVAL as id FROM DUAL
+		</selectKey>
+		INSERT INTO XXL_JOB_INFO (
+			ID,
+			JOB_GROUP,
+			JOB_CRON,
+			JOB_DESC,
+			ADD_TIME,
+			UPDATE_TIME,
+			AUTHOR,
+			ALARM_EMAIL,
+            EXECUTOR_ROUTE_STRATEGY,
+			EXECUTOR_HANDLER,
+			EXECUTOR_PARAM,
+			EXECUTOR_BLOCK_STRATEGY,
+			EXECUTOR_TIMEOUT,
+			EXECUTOR_FAIL_RETRY_COUNT,
+			GLUE_TYPE,
+			GLUE_SOURCE,
+			GLUE_REMARK,
+			GLUE_UPDATETIME,
+			CHILD_JOBID,
+			TRIGGER_STATUS,
+			TRIGGER_LAST_TIME,
+			TRIGGER_NEXT_TIME
+		) VALUES (
+			#{id},
+			#{jobGroup,jdbcType=NUMERIC},
+			#{jobCron,jdbcType=VARCHAR},
+			#{jobDesc,jdbcType=VARCHAR},
+			to_date(#{addTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			to_date(#{updateTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			#{author,jdbcType=VARCHAR},
+			#{alarmEmail,jdbcType=VARCHAR},
+			#{executorRouteStrategy,jdbcType=VARCHAR},
+			#{executorHandler,jdbcType=VARCHAR},
+			#{executorParam,jdbcType=VARCHAR},
+			#{executorBlockStrategy,jdbcType=VARCHAR},
+			#{executorTimeout,jdbcType=NUMERIC},
+			#{executorFailRetryCount,jdbcType=NUMERIC},
+			#{glueType,jdbcType=VARCHAR},
+			#{glueSource,jdbcType=VARCHAR},
+			#{glueRemark,jdbcType=VARCHAR},
+			to_date(#{glueUpdatetimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			#{childJobId,jdbcType=VARCHAR},
+			#{triggerStatus,jdbcType=NUMERIC},
+			#{triggerLastTime,jdbcType=NUMERIC},
+			#{triggerNextTime,jdbcType=NUMERIC}
+		)
+	</insert>
+
+	<select id="loadById" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_INFO T
+		WHERE T.ID = #{id}
+	</select>
+
+	<update id="update" parameterType="com.xxl.job.admin.core.model.XxlJobInfo" >
+		UPDATE XXL_JOB_INFO
+		SET
+			JOB_GROUP = #{jobGroup,jdbcType=NUMERIC},
+			JOB_CRON = #{jobCron,jdbcType=VARCHAR},
+			JOB_DESC = #{jobDesc,jdbcType=VARCHAR},
+			UPDATE_TIME = to_date(#{updateTimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			AUTHOR = #{author,jdbcType=VARCHAR},
+			ALARM_EMAIL = #{alarmEmail,jdbcType=VARCHAR},
+			EXECUTOR_ROUTE_STRATEGY = #{executorRouteStrategy,jdbcType=VARCHAR},
+			EXECUTOR_HANDLER = #{executorHandler,jdbcType=VARCHAR},
+			EXECUTOR_PARAM = #{executorParam,jdbcType=VARCHAR},
+			EXECUTOR_BLOCK_STRATEGY = #{executorBlockStrategy,jdbcType=VARCHAR},
+			EXECUTOR_TIMEOUT = #{executorTimeout,jdbcType=NUMERIC},
+			EXECUTOR_FAIL_RETRY_COUNT = #{executorFailRetryCount,jdbcType=NUMERIC},
+			GLUE_TYPE = #{glueType,jdbcType=VARCHAR},
+			GLUE_SOURCE = #{glueSource,jdbcType=VARCHAR},
+			GLUE_REMARK = #{glueRemark,jdbcType=VARCHAR},
+			GLUE_UPDATETIME = to_date(#{glueUpdatetimeStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			CHILD_JOBID = #{childJobId,jdbcType=VARCHAR},
+			TRIGGER_STATUS = #{triggerStatus,jdbcType=NUMERIC},
+			TRIGGER_LAST_TIME = #{triggerLastTime,jdbcType=NUMERIC},
+			TRIGGER_NEXT_TIME = #{triggerNextTime,jdbcType=NUMERIC}
+		WHERE ID = #{id}
+	</update>
+
+	<delete id="delete" parameterType="java.util.HashMap">
+		DELETE
+		FROM XXL_JOB_INFO
+		WHERE ID = #{id}
+	</delete>
+
+	<select id="getJobsByGroup" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_INFO T
+		WHERE T.JOB_GROUP = #{jobGroup}
+	</select>
+
+	<select id="findAllCount" resultType="int">
+		SELECT count(1)
+		FROM XXL_JOB_INFO
+	</select>
+
+
+	<select id="scheduleJobQuery" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT * FROM (
+			SELECT <include refid="Base_Column_List" />
+			FROM XXL_JOB_INFO T
+			WHERE T.TRIGGER_STATUS = 1
+			and T.TRIGGER_NEXT_TIME <![CDATA[ <= ]]> #{maxNextTime}
+			ORDER BY ID ASC
+		) T2 WHERE ROWNUM &lt;= #{pagesize}
+	</select>
+
+	<update id="scheduleUpdate" parameterType="com.xxl.job.admin.core.model.XxlJobInfo"  >
+		UPDATE XXL_JOB_INFO
+		SET
+			TRIGGER_LAST_TIME = #{triggerLastTime,jdbcType=NUMERIC},
+			TRIGGER_NEXT_TIME = #{triggerNextTime,jdbcType=NUMERIC},
+			TRIGGER_STATUS = #{triggerStatus,jdbcType=NUMERIC}
+		WHERE ID = #{id}
+	</update>
+
+</mapper>

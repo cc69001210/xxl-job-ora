@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xxl.job.admin.dao.XxlJobLogReportDao">
+
+	<resultMap id="XxlJobLogReport" type="com.xxl.job.admin.core.model.XxlJobLogReport" >
+		<result column="ID" property="id" />
+	    <result column="TRIGGER_DAY" property="triggerDay" />
+	    <result column="TRIGGER_DAY_STR" property="triggerDayStr" />
+		<result column="RUNNING_COUNT" property="runningCount" />
+	    <result column="SUC_COUNT" property="sucCount" />
+	    <result column="FAIL_COUNT" property="failCount" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		T.ID,
+		T.TRIGGER_DAY,
+		T.RUNNING_COUNT,
+		T.SUC_COUNT,
+		T.FAIL_COUNT,
+		TO_CHAR(TRIGGER_DAY,'yyyy-mm-dd hh24:mi:ss') TRIGGER_DAY_STR
+	</sql>
+
+	<insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobLogReport"  keyProperty="id" >
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			SELECT SEQ_XXL_JOB_LOG_REPORT.NEXTVAL as id FROM DUAL
+		</selectKey>
+		 INSERT INTO XXL_JOB_LOG_REPORT (
+			ID,
+			TRIGGER_DAY,
+			RUNNING_COUNT,
+			SUC_COUNT,
+			FAIL_COUNT
+		) VALUES (
+			#{id,jdbcType=NUMERIC},
+			TO_DATE(#{triggerDayStr,jdbcType=VARCHAR},'yyyy-mm-dd hh24:mi:ss'),
+			#{runningCount,jdbcType=NUMERIC},
+			#{sucCount,jdbcType=NUMERIC},
+			#{failCount,jdbcType=NUMERIC}
+		)
+	</insert>
+
+	<update id="update" >
+        UPDATE XXL_JOB_LOG_REPORT
+        SET RUNNING_COUNT = #{runningCount,jdbcType=NUMERIC},
+        	SUC_COUNT = #{sucCount,jdbcType=NUMERIC},
+        	FAIL_COUNT = #{failCount,jdbcType=NUMERIC}
+        WHERE TO_CHAR(TRIGGER_DAY,'yyyy-mm-dd') = TO_CHAR(#{triggerDay},'yyyy-mm-dd')
+
+        <!-- UPDATE XXL_JOB_LOG_REPORT
+        SET RUNNING_COUNT = #{runningCount,jdbcType=NUMERIC},
+        	SUC_COUNT = #{sucCount,jdbcType=NUMERIC},
+        	FAIL_COUNT = #{failCount,jdbcType=NUMERIC}
+        WHERE TRIGGER_DAY = #{triggerDay} -->
+    </update>
+
+	<select id="queryLogReport" resultMap="XxlJobLogReport">
+		SELECT <include refid="Base_Column_List" />
+		FROM XXL_JOB_LOG_REPORT T
+		WHERE T.TRIGGER_DAY between #{triggerDayFrom} and #{triggerDayTo}
+		ORDER BY T.TRIGGER_DAY ASC
+	</select>
+
+	<select id="queryLogReportTotal" resultMap="XxlJobLogReport">
+		SELECT
+			SUM(RUNNING_COUNT) running_count,
+			SUM(SUC_COUNT) suc_count,
+			SUM(FAIL_COUNT) fail_count
+		FROM XXL_JOB_LOG_REPORT T
+	</select>
+
+</mapper>
